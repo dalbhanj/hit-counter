@@ -32,21 +32,29 @@ Create Elasticache Redis server[http://docs.aws.amazon.com/AmazonElastiCache/lat
     redis = Redis(host='DNS_NODE_ENDPOINT', port=6379)
 
 Restart your app
+
     $ docker-compose build
     $ docker-compose up
 
 Stop the app and push the image to ECR 
+
     $ docker-compose down
 
 Create an ECR repo (hitcounter)
 
 Authenticate, Tag and Push Docker image (hitcounter_web) to ECR. You will find relevant commands when you click 'View Push Commands' from repository page
+
     $ aws ecr get-login --region us-east-1
     $ docker tag hitcounter_web:latest xxxxxx.us-east-1.amazonaws.com/hitcounter:latest
     $ docker push xxxxxx.us-east-1.amazonaws.com/hitcounter:latest
 
 Register hitcounter-taskdef into ECS
+
     $ aws ecs register-task-definition --family hit-counter --cli-input-json file://hitcounter-taskdef.json 
+
+Scale Container Instances by clicking "Scale ECS Instances" and set Desired number of instances to 4 hosts
+
+
 
 
 
