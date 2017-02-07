@@ -1,0 +1,38 @@
+{
+    "family": "hit-counter", 
+    "taskRoleArn": "", 
+    "networkMode": "bridge", 
+    "containerDefinitions": [
+        {
+            "name": "hitcounter_www", 
+            "image": "896501016854.dkr.ecr.us-east-1.amazonaws.com/hitcounter", 
+            "cpu": 10, 
+            "memory": 256, 
+            "links": [], 
+            "portMappings": [
+                {
+                    "containerPort": 5000, 
+                    "hostPort": 80, 
+                    "protocol": "tcp"
+                }
+            ], 
+            "essential": true, 
+            "entryPoint": [], 
+            "command": [
+                "gunicorn",
+                "app:app",
+                "-b",
+                "0.0.0.0:5000"
+            ], 
+            "environment": [], 
+            "logConfiguration": {
+                "logDriver": "awslogs", 
+                "options": {
+                    "awslogs-group": "hit-counter",
+                    "awslogs-region": "us-east-1"
+                }
+            }
+        }
+    ], 
+    "volumes": []
+}
