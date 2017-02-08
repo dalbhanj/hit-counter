@@ -3,7 +3,7 @@
 A basic Python web app to demonstrate Amazon ECS capabilities
 
 ### Pre-requisites
-1. Make sure you have [docker-compose][https://docs.docker.com/compose/install/], [docker][https://docs.docker.com/engine/installation/], [aws cli][http://docs.aws.amazon.com/cli/latest/userguide/installing.html] installed on your machine
+1. Make sure you have [docker-compose](https://docs.docker.com/compose/install/), [docker](https://docs.docker.com/engine/installation/), [aws cli](http://docs.aws.amazon.com/cli/latest/userguide/installing.html) installed on your machine
 Note: docker is preinstalled if you choose Amazon ECS instance for development
 
 2. The Instance role has AmazonEC2ContainerRegistryPowerUser[http://docs.aws.amazon.com/AmazonECR/latest/userguide/ecr_managed_policies.html] policy attached
@@ -28,7 +28,7 @@ Now that our app working, let's run it as a task in ECS
 
 Actually before we run it as a task, we will make one more change to the application. We will remove Redis container from our configuration and use Elasticache Redis cluster as a central server to keep the count of visitors. By doing this, we will get scaling flexibility for our application
 
-1. Create [Elasticache Redis server][http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/AmazonVPC.html] in the VPC and give access to security group used by ECS container instance. Copy Redis node endpoint, edit app.py and replace host configuration  
+1. Create [Elasticache Redis server](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/AmazonVPC.html) in the VPC and give access to security group used by ECS container instance. Copy Redis node endpoint, edit app.py and replace host configuration  
     ```python
     redis = Redis(host='DNS_NODE_ENDPOINT', port=6379)
     ```
@@ -58,7 +58,7 @@ Actually before we run it as a task, we will make one more change to the applica
     ```
 7. Scale Container Instances by clicking "Scale ECS Instances" and set Desired number of instances to 4 hosts
 
-8. Choose the task definition and [Create a Service with an ALB][http://docs.aws.amazon.com/AmazonECS/latest/developerguide/create-service.html] using ECS console
+8. Choose the task definition and [Create a Service with an ALB](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/create-service.html) using ECS console
 
 This exercise demonstrates quicker way of taking an application under development to a highly available service running on ECS 
 
