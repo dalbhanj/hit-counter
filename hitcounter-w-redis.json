@@ -5,14 +5,13 @@
     "containerDefinitions": [
         {
             "name": "hitcounter_www", 
-            "image": "896501016854.dkr.ecr.us-east-1.amazonaws.com/hitcounter", 
+            "image": "896501016854.dkr.ecr.us-east-1.amazonaws.com/hitcounter:wredis", 
             "cpu": 10, 
             "memory": 256, 
-            "links": [], 
+            "links": ["redis"], 
             "portMappings": [
                 {
                     "containerPort": 5000, 
-                    "hostPort": 80, 
                     "protocol": "tcp"
                 }
             ], 
@@ -32,6 +31,12 @@
                     "awslogs-region": "us-east-1"
                 }
             }
+        },
+        {
+            "name": "redis", 
+            "image": "redis:latest", 
+            "memory": 50,    
+            "essential": true               
         }
     ], 
     "volumes": []

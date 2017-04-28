@@ -33,7 +33,7 @@ Actually before we run it as a task, we will make one more change to the applica
     redis = Redis(host='DNS_NODE_ENDPOINT', port=6379)
     ```
 
-2. Restart your app
+2. Rebuild your app
     ```
     $ docker-compose build
     $ docker-compose up
@@ -54,7 +54,7 @@ Actually before we run it as a task, we will make one more change to the applica
 
 6. Register hitcounter-taskdef into ECS
     ```
-    $ aws ecs register-task-definition --family hit-counter --cli-input-json file://hitcounter-taskdef.json 
+    $ aws ecs register-task-definition --family hit-counter --cli-input-json file://hitcounter-wo-redis.json 
     ```
 7. Scale Container Instances by clicking "Scale ECS Instances" and set Desired number of instances to 4 hosts
 
