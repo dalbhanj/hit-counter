@@ -56,9 +56,9 @@ Actually before we run it as a task, we will make one more change to the applica
     ```
     $ aws ecs register-task-definition --family hit-counter --cli-input-json file://hitcounter-wo-redis.json 
     ```
-7. Scale Container Instances by clicking "Scale ECS Instances" and set Desired number of instances to 4 hosts
+7. Scale Container Instances by clicking "Scale ECS Instances" and set Desired number of instances to 2 hosts
 
-8. Choose the task definition and [Create a Service with an ALB](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/create-service.html) using ECS console (make sure to choose container port 5000 while defining ALB Target Groups. If your service is running fine but ALB Target status is unhealthy, make sure ALL TCP ports are open to ALB Security Group on Container Instance Security Group)
+8. Choose the task definition and [Create a Service with an ALB](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/create-service.html) using ECS console (make sure to choose container port 5000 while defining ALB Target Groups. If your service is running fine but ALB Target status is unhealthy, make sure ALL TCP ports are open to the source as ALB's Security Group Id on Container Instance Security Group)
 
 This exercise demonstrates quicker way of taking an application under development to a highly available service running on ECS 
 
