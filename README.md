@@ -65,7 +65,7 @@ This exercise demonstrates quicker way of taking an application under developmen
 To learn more about Amazon ECS, please visit https://aws.amazon.com/ecs/
 
 ## Cleanup
-COMING SOON
+Go to Tasks tab and Stop all tasks first. Delete ECS Cluster, this will delete Container instances and resources created by CloudFormation template. Finally, delete ELB and its Target Groups
 
 
 
