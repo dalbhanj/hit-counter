@@ -1,10 +1,12 @@
 # A simple Python Web Service configuration
-web:
-  build: .
-  command: gunicorn app:app -b 0.0.0.0:5000
-  ports:
-   - "80:5000"
-  links:
-   - redis
-redis:
-  image: redis:latest
+version: '2'
+services:
+  web:
+    build: .
+    command: gunicorn app:app -b 0.0.0.0:5000
+    depends_on:
+      - redis
+    ports:
+      - "80:5000"
+  redis:
+    image: redis
