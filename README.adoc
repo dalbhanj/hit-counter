@@ -63,9 +63,9 @@ Create an ECR repo (hitcounter)
     $ docker tag hitcounter_web:latest aws_account_id.dkr.ecr.us-east-1.amazonaws.com/hitcounter:latest
     $ docker push aws_account_id.dkr.ecr.us-east-1.amazonaws.com/hitcounter:latest
 
-7. Replace web with ECR repository URI in docker-compose file and comment out redis build
+7. Replace web with ECR repository URI in docker-compose file and comment out redis build (this is
+ saved as hitcounter-service.yml)
 
-    $ cat hitcounter-service.yml
     version: '2'
     services:
       web:
@@ -106,6 +106,20 @@ by setting desired scaling policies for your service
 
     $ ab -n 100000 -c 1000 <elb-dns-name>
 
+=== Deploy on Fargate
+
+Great to see our app running as highly available service on ECS. Now let's get rid of the infrastructure and
+run this as a Fargate service.
+
+1. Use the https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_tutorial_fargate.html[tutorial]
+to create Fargate infrastructure.
+
+2. After Step3 in documentation, you can use the hitcounter-farg8-service.yml and ecs-params.yml
+to create a Fargate service
+
+    $ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml --ecs-params ecs-parameters.yml service up --create-log-groups
+
+
 == Conclusion
 This exercise demonstrates how to migrate an app that was developed on your local PC to a
 highly available service on ECS.
@@ -113,7 +127,24 @@ highly available service on ECS.
 To learn more about Amazon ECS, please visit https://aws.amazon.com/ecs/
 
 == Cleanup
-Go to Tasks tab and Stop all tasks first. Delete ECS service and then delete ECS Cluster. This will delete Container instances and resources created by CloudFormation template. Finally, delete ELB and its Target Groups
+
+1. Here are cleanup steps for EC2 tasks. First scale the number of desired tasks to 0 and then delete the Service
+
+    $ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service scale 0
+    $ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service rm
+
+2. Cleanup steps for Fargate tasks.
+
+    $ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service scale 0
+    $ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service scale rm
+
+3. Delete Elasticache Redis Cluster
+
+4. Delete ELB and Target Groups
+
+5. Delete both ec2 and fargate clusters
+
+    $ ecs-cli down --force
 
 == Troubleshooting
 

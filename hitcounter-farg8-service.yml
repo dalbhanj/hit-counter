@@ -1,0 +1,19 @@
+# A simple Python Web Service configuration
+version: '2'
+services:
+  web:
+    image: 896501016854.dkr.ecr.us-east-1.amazonaws.com/hitcounter:latest
+    # build: .
+    command: gunicorn app:app -b 0.0.0.0:80
+    # depends_on:
+    #   - redis
+    ports:
+      - "80:80"
+    logging:
+      driver: "awslogs"
+      options:
+        awslogs-region: "us-east-1"
+        awslogs-group: "ecs/hitcounter"
+        awslogs-stream-prefix: "hitcounter"
+  # redis:
+  #   image: redis
