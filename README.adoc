@@ -38,6 +38,10 @@ data store to keep the count of visitors. By doing this, we can achieve HA and u
 1. Let's create a http://docs.aws.amazon.com/AmazonECS/latest/developerguide/create_cluster.html[ECS cluster]
 with EC2 hosts using https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_tutorial_EC2.html[ECS CLI].
 
+    $ export ECS_PROFILE=hitcounter_ec2
+    $ ecs-cli configure --cluster hitcounter-ec2 --region us-east-1 --default-launch-type EC2 --config-name hitcounter-ec2
+    $ ecs-cli configure profile --access-key $AWS_ACCESS_KEY_ID --secret-key $AWS_SECRET_ACCESS_KEY --profile-name hitcounter-ec2
+    $ ecs-cli configure default --config-name hitcounter-ec2
     $ ecs-cli up --keypair id_rsa --capability-iam --size 2 --instance-type t2.medium
 
 2. Create a https://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/GettingStarted.CreateCluster.html[standalone Elasticache Redis instance]
@@ -111,8 +115,14 @@ by setting desired scaling policies for your service
 Great to see our app running as highly available service on ECS. Now let's get rid of the infrastructure and
 run this as a Fargate service.
 
-1. Use the https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_tutorial_fargate.html[tutorial]
-to create Fargate infrastructure.
+1. Create Fargate infrastructure similar to Step 1 above (use https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_tutorial_fargate.html[tutorial]
+for reference)
+
+    $ export ECS_PROFILE=hitcounter_farg8
+    $ ecs-cli configure --cluster hitcounter-farg8 --region us-east-1 --default-launch-type FARGATE --config-name hitcounter-farg8
+    $ ecs-cli configure profile --access-key $AWS_ACCESS_KEY_ID --secret-key $AWS_SECRET_ACCESS_KEY --profile-name hitcounter-farg8
+    $ ecs-cli configure default --config-name hitcounter-farg8
+    $ ecs-cli up --keypair id_rsa --capability-iam --size 2 --instance-type t2.medium
 
 2. After Step3 in documentation, you can use the hitcounter-farg8-service.yml and ecs-params.yml
 to create a Fargate service
