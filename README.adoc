@@ -6,10 +6,7 @@
 Simple demo to demonstrate migration of locally developed application into Amazon ECS and then to Fargate
 
 === Pre-requisites
-A. Make sure you have https://docs.docker.com/compose/install/[docker-compose], https://docs.docker.com/engine/installation/[docker], http://docs.aws.amazon.com/cli/latest/userguide/installing.html[awscli] installed on your machine
-Note: docker is preinstalled if you choose Amazon ECS instance for development
-
-B. If you use ECS instance, assign http://docs.aws.amazon.com/AmazonECR/latest/userguide/ecr_managed_policies.html[AmazonEC2ContainerRegistryPowerUser] IAM role to the instance
+Make sure you have https://docs.docker.com/compose/install/[docker-compose], https://docs.docker.com/engine/installation/[docker], http://docs.aws.amazon.com/cli/latest/userguide/installing.html[awscli] installed on your machine
 
 === Download the app and run it on local PC
 
@@ -78,7 +75,7 @@ Create an ECR repo (hitcounter)
       web:
         image: aws_account_id.dkr.ecr.us-east-1.amazonaws.com/hitcounter:latest
         # build: .
-        command: gunicorn app:app -b 0.0.0.0:5000
+        command: gunicorn app:app -b 0.0.0.0:80
         # depends_on:
         #   - redis
         ports:
@@ -137,9 +134,14 @@ for reference)
 
     $ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml --ecs-params ecs-parameters.yml service up --create-log-groups
 
+3. Let's make it HA service by attaching to the Load Balancer and configure scaling
+
+    $ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml --ecs-params ecs-parameters.yml service up --create-log-groups --target-group-arn <arn> --container-name web --container-port 80
+    $ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml --ecs-params ecs-parameters.yml service scale 2
+
 == Conclusion
 This exercise demonstrates how to migrate an app that was developed on your local PC to a
-highly available service on ECS.
+highly available service on ECS and then moving to Fargate.
 
 To learn more about Amazon ECS, please visit https://aws.amazon.com/ecs/
 
@@ -152,8 +154,8 @@ To learn more about Amazon ECS, please visit https://aws.amazon.com/ecs/
 
 2. Cleanup steps for Fargate tasks.
 
-    $ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service scale 0
-    $ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service scale rm
+    $ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml service scale 0
+    $ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml service scale rm
 
 3. Delete Elasticache Redis Cluster
 
