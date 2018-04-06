@@ -9,5 +9,11 @@ services:
     #   - redis
     ports:
       - "80:80"
+    logging:
+      driver: "awslogs"
+      options:
+        awslogs-region: "us-east-1"
+        awslogs-group: "ecs/hitcounter"
+        awslogs-stream-prefix: "hitcounter"
   # redis:
   #   image: redis

@@ -52,22 +52,25 @@ add :6379)
 
     redis = Redis(host='DNS_NODE_ENDPOINT', port=6379)
 
-4. Rebuild your app
+4. Configure https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html[Security Groups] created by
+ecs cli tool and open port 80 to internet and 6379 to its own SG
+
+5. Rebuild your app
 
     $ docker-compose build
 
-5. Before you can deploy this app on ECS, you need to push hitcounter_web image to ECR repo.
+6. Before you can deploy this app on ECS, you need to push hitcounter_web image to ECR repo.
 Create an ECR repo (hitcounter)
 
     $ aws ecr create-repository --repository-name hitcounter
 
-6. Authenticate, Tag and Push Docker image (hitcounter_web) to ECR.
+7. Authenticate, Tag and Push Docker image (hitcounter_web) to ECR.
 
-    $ aws ecr get-login --no-include-email --region us-east-1
+    $ aws ecr get-login --no-include-email --region us-east-1 | sh
     $ docker tag hitcounter_web:latest aws_account_id.dkr.ecr.us-east-1.amazonaws.com/hitcounter:latest
     $ docker push aws_account_id.dkr.ecr.us-east-1.amazonaws.com/hitcounter:latest
 
-7. Replace web with ECR repository URI in docker-compose file and comment out redis build (this is
+8. Comment out redis build, replace web with ECR repository URI and add logging info into docker-compose file (this is
  saved as hitcounter-service.yml)
 
     version: '2'
@@ -79,34 +82,40 @@ Create an ECR repo (hitcounter)
         # depends_on:
         #   - redis
         ports:
-          - "80:5000"
+          - "80:80"
+        logging:
+          driver: "awslogs"
+          options:
+            awslogs-region: "us-east-1"
+            awslogs-group: "ecs/hitcounter"
+            awslogs-stream-prefix: "hitcounter"
       # redis:
       #   image: redis
 
-8. Deploy the app
+9. Deploy the app on ECS
 
-    $ ecs-cli compose up
+    $ ecs-cli compose --file hitcounter-service.yml --create-log-groups
 
-9. Now that our app is working on ECS, we will run this as a Service and use ALB for load balancing
+10. Now that our app is working on ECS, we will run this as a Service and use ALB for load balancing.
 https://docs.aws.amazon.com/AmazonECS/latest/developerguide/create-application-load-balancer.html[Create an ALB]
 first and then use ecs-cli to create a Service
 
-    $ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service up ----target-group-arn <arn> --container-name web --container-port 5000 --role ecsServiceRole
+    $ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service up --target-group-arn <arn> --container-name web --container-port 80 --role ecsServiceRole
 
-10. Let's Scale our application
+11. Let's Scale our application
 
     $ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service scale 2
 
-11. You can run load generator app against your app to increase the number of  Container
+12. You can run load generator app against your app to increase the number of  Container
 Instances. For now let's scale manually by setting desired count to 4 hosts
 
     $ aws autoscaling update-auto-scaling-group --auto-scaling-group-name <value> --launch-configuration-name <value> --min-size 0 --max-size 4
     $ aws autoscaling set-desired-capacity --auto-scaling-group-name <value> --desired-capacity 4
 
-12. https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-autoscaling-targettracking.html[Configure Service Autoscaling]
+13. https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-autoscaling-targettracking.html[Configure Service Autoscaling]
 by setting desired scaling policies for your service
 
-13. Run Apache benchmark utility to test service autoscaling functionality.
+14. Run Apache benchmark utility to test service autoscaling functionality.
 
     $ ab -n 100000 -c 1000 <elb-dns-name>
 
@@ -124,11 +133,9 @@ for reference)
     $ ecs-cli configure default --config-name hitcounter-farg8
     $ ecs-cli up --keypair id_rsa --capability-iam --size 2 --instance-type t2.medium
 
-2. After Step3 in documentation, you can use the hitcounter-farg8-service.yml and ecs-params.yml
-to create a Fargate service
+2. Let's create a Fargate service using hitcounter-farg8-service.yml and ecs-parameters.yml
 
     $ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml --ecs-params ecs-parameters.yml service up --create-log-groups
-
 
 == Conclusion
 This exercise demonstrates how to migrate an app that was developed on your local PC to a
