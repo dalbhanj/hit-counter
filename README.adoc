@@ -91,7 +91,7 @@ Create an ECR repo (hitcounter)
 
 9. Deploy the app on ECS
 
-    $ ecs-cli compose --file hitcounter-service.yml --create-log-groups
+    $ ecs-cli compose --file hitcounter-service.yml up --create-log-groups
 
 10. Now that our app is working on ECS, we will run this as a Service and use ALB for load balancing.
 https://docs.aws.amazon.com/AmazonECS/latest/developerguide/create-application-load-balancer.html[Create an ALB]
