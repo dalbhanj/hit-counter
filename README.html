@@ -1,0 +1,155 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>ReadMe</title><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui" name="viewport"><link href="node_modules/reveal.js/css/reveal.css" rel="stylesheet"><link rel="stylesheet" href="node_modules/reveal.js/css/theme/black.css" id="theme"><link href="node_modules/reveal.js/lib/css/zenburn.css" rel="stylesheet"><script>var link = document.createElement( 'link' );
+link.rel = 'stylesheet';
+link.type = 'text/css';
+link.href = window.location.search.match( /print-pdf/gi ) ? "node_modules/reveal.js/css/print/pdf.css" : "node_modules/reveal.js/css/print/paper.css";
+document.getElementsByTagName( 'head' )[0].appendChild( link );</script><!--[if lt IE 9]><script src="node_modules/reveal.js/lib/js/html5shiv.js"></script><![endif]--></head><body><div class="reveal"><div class="slides"><section><section id="readme"><h2>ReadMe</h2><div class="paragraph"><p>Simple demo to demonstrate migration of locally developed application into Amazon ECS and then to Fargate</p></div></section><section id="pre_requisites"><h2>Pre-requisites</h2><div class="paragraph"><p>Make sure you have <a href="https://docs.docker.com/compose/install/">docker-compose</a>, <a href="https://docs.docker.com/engine/installation/">docker</a>, <a href="http://docs.aws.amazon.com/cli/latest/userguide/installing.html">awscli</a> installed on your machine</p></div></section><section id="download_the_app_and_run_it_on_local_pc"><h2>Download the app and run it on local PC</h2><div class="olist arabic"><ol class="arabic"><li><p>Clone this repository</p><div class="literalblock"><div class="content"><pre>$ git clone https://github.com/dalbhanj/hit-counter</pre></div></div></li><li><p>Use docker-compose to start the application</p><div class="literalblock"><div class="content"><pre>$ docker-compose up</pre></div></div></li></ol></div>
+<div class="paragraph"><p>The web app should now be listening on port 80 on the host IP address</p></div>
+<div class="paragraph"><p>Bring the application down using CTRL+C or <code><code>docker-compose down</code></code></p></div>
+<div class="paragraph"><p>Now that our app works, let&#8217;s run this on ECS</p></div></section><section id="deploy_on_amazon_ecs"><h2>Deploy on Amazon ECS</h2><div class="paragraph"><p>Actually before we run it as a task, we will make one more change to the application.
+We will remove Redis container from our configuration and use
+<a href="https://aws.amazon.com/elasticache/redis/">Elasticache Redis cluster</a> as a centralized
+data store to keep the count of visitors. By doing this, we can achieve HA and use built-in
+ features of managed Redis service while we focus on our app development</p></div>
+<div class="olist arabic"><ol class="arabic"><li><p>Let&#8217;s create a <a href="http://docs.aws.amazon.com/AmazonECS/latest/developerguide/create_cluster.html">ECS cluster</a>
+with EC2 hosts using <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_tutorial_EC2.html">ECS CLI</a>.</p><div class="literalblock"><div class="content"><pre>$ export ECS_PROFILE=hitcounter_ec2
+$ ecs-cli configure --cluster hitcounter-ec2 --region us-east-1 --default-launch-type EC2 --config-name hitcounter-ec2
+$ ecs-cli configure profile --access-key $AWS_ACCESS_KEY_ID --secret-key $AWS_SECRET_ACCESS_KEY --profile-name hitcounter-ec2
+$ ecs-cli configure default --config-name hitcounter-ec2
+$ ecs-cli up --keypair id_rsa --capability-iam --size 2 --instance-type t2.medium</pre></div></div></li><li><p>Create a <a href="https://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/GettingStarted.CreateCluster.html">standalone Elasticache Redis instance</a>
+in the same VPC and give access to security group used by ECS container instance.</p></li><li><p>Once Redis is ready, copy the node endpoint and replace host configuration within app.py (don&#8217;t
+add :6379)</p><div class="literalblock"><div class="content"><pre>redis = Redis(host='DNS_NODE_ENDPOINT', port=6379)</pre></div></div></li><li><p>Configure <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html">Security Groups</a> created by
+ecs cli tool and open port 80 to internet and 6379 to its own SG</p></li><li><p>Rebuild your app</p><div class="literalblock"><div class="content"><pre>$ docker-compose build</pre></div></div></li><li><p>Before you can deploy this app on ECS, you need to push hitcounter_web image to ECR repo.
+Create an ECR repo (hitcounter)</p><div class="literalblock"><div class="content"><pre>$ aws ecr create-repository --repository-name hitcounter</pre></div></div></li><li><p>Authenticate, Tag and Push Docker image (hitcounter_web) to ECR.</p><div class="literalblock"><div class="content"><pre>$ aws ecr get-login --no-include-email --region us-east-1 | sh
+$ docker tag hitcounter_web:latest aws_account_id.dkr.ecr.us-east-1.amazonaws.com/hitcounter:latest
+$ docker push aws_account_id.dkr.ecr.us-east-1.amazonaws.com/hitcounter:latest</pre></div></div></li><li><p>Comment out redis build, replace web with ECR repository URI and add logging info into docker-compose file (this is
+saved as hitcounter-service.yml)</p><div class="literalblock"><div class="content"><pre>version: '2'
+services:
+  web:
+    image: aws_account_id.dkr.ecr.us-east-1.amazonaws.com/hitcounter:latest
+    # build: .
+    command: gunicorn app:app -b 0.0.0.0:80
+    # depends_on:
+    #   - redis
+    ports:
+      - "80:80"
+    logging:
+      driver: "awslogs"
+      options:
+        awslogs-region: "us-east-1"
+        awslogs-group: "ecs/hitcounter"
+        awslogs-stream-prefix: "hitcounter"
+  # redis:
+  #   image: redis</pre></div></div></li><li><p>Deploy the app on ECS</p><div class="literalblock"><div class="content"><pre>$ ecs-cli compose --file hitcounter-service.yml up --create-log-groups</pre></div></div></li><li><p>Now that our app is working on ECS, we will run this as a Service and use ALB for load balancing.
+<a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/create-application-load-balancer.html">Create an ALB</a>
+first and then use ecs-cli to create a Service</p><div class="literalblock"><div class="content"><pre>$ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service up --target-group-arn &lt;arn&gt; --container-name web --container-port 80 --role ecsServiceRole</pre></div></div></li><li><p>Let&#8217;s Scale our application</p><div class="literalblock"><div class="content"><pre>$ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service scale 2</pre></div></div></li><li><p>You can run load generator app against your app to increase the number of  Container
+Instances. For now let&#8217;s scale manually by setting desired count to 4 hosts</p><div class="literalblock"><div class="content"><pre>$ aws autoscaling update-auto-scaling-group --auto-scaling-group-name &lt;value&gt; --launch-configuration-name &lt;value&gt; --min-size 0 --max-size 4
+$ aws autoscaling set-desired-capacity --auto-scaling-group-name &lt;value&gt; --desired-capacity 4</pre></div></div></li><li><p><a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-autoscaling-targettracking.html">Configure Service Autoscaling</a>
+by setting desired scaling policies for your service</p></li><li><p>Run Apache benchmark utility to test service autoscaling functionality.</p><div class="literalblock"><div class="content"><pre>$ ab -n 100000 -c 1000 &lt;elb-dns-name&gt;</pre></div></div></li></ol></div></section><section id="deploy_on_fargate"><h2>Deploy on Fargate</h2><div class="paragraph"><p>Great to see our app running as highly available service on ECS. Now let&#8217;s get rid of the infrastructure and
+run this as a Fargate service.</p></div>
+<div class="olist arabic"><ol class="arabic"><li><p>Create Fargate infrastructure similar to Step 1 above (use <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_tutorial_fargate.html">tutorial</a>
+for reference)</p><div class="literalblock"><div class="content"><pre>$ export ECS_PROFILE=hitcounter_farg8
+$ ecs-cli configure --cluster hitcounter-farg8 --region us-east-1 --default-launch-type FARGATE --config-name hitcounter-farg8
+$ ecs-cli configure profile --access-key $AWS_ACCESS_KEY_ID --secret-key $AWS_SECRET_ACCESS_KEY --profile-name hitcounter-farg8
+$ ecs-cli configure default --config-name hitcounter-farg8
+$ ecs-cli up --keypair id_rsa --capability-iam --size 2 --instance-type t2.medium</pre></div></div></li><li><p>Let&#8217;s create a Fargate service using hitcounter-farg8-service.yml and ecs-parameters.yml</p><div class="literalblock"><div class="content"><pre>$ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml --ecs-params ecs-parameters.yml service up --create-log-groups</pre></div></div></li><li><p>Let&#8217;s make it HA service by attaching to the Load Balancer and configure scaling</p><div class="literalblock"><div class="content"><pre>$ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml --ecs-params ecs-parameters.yml service up --create-log-groups --target-group-arn &lt;arn&gt; --container-name web --container-port 80
+$ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml --ecs-params ecs-parameters.yml service scale 2</pre></div></div></li></ol></div></section></section>
+<section id="conclusion"><h2>Conclusion</h2><div class="paragraph"><p>This exercise demonstrates how to migrate an app that was developed on your local PC to a
+highly available service on ECS and then moving to Fargate.</p></div>
+<div class="paragraph"><p>To learn more about Amazon ECS, please visit <a href="https://aws.amazon.com/ecs/" class="bare">https://aws.amazon.com/ecs/</a></p></div></section>
+<section id="cleanup"><h2>Cleanup</h2><div class="olist arabic"><ol class="arabic"><li><p>Here are cleanup steps for EC2 tasks. First scale the number of desired tasks to 0 and then delete the Service</p><div class="literalblock"><div class="content"><pre>$ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service scale 0
+$ ecs-cli compose --project-name hitcounter --file hitcounter-service.yml service rm</pre></div></div></li><li><p>Cleanup steps for Fargate tasks.</p><div class="literalblock"><div class="content"><pre>$ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml service scale 0
+$ ecs-cli compose --project-name hitcounter --file hitcounter-farg8-service.yml service scale rm</pre></div></div></li><li><p>Delete Elasticache Redis Cluster</p></li><li><p>Delete ELB and Target Groups</p></li><li><p>Delete both ec2 and fargate clusters</p><div class="literalblock"><div class="content"><pre>$ ecs-cli down --force</pre></div></div></li></ol></div></section>
+<section id="troubleshooting"><h2>Troubleshooting</h2><div class="paragraph"><p>If you get an error on Step 2, make sure you have Docker for <a href="https://www.docker.com/docker-mac">Mac</a> or <a href="https://www.docker.com/docker-windows">Windows</a> installed and started on your PC</p></div>
+<div class="literalblock"><div class="content"><pre>$ docker-compose up
+ERROR: Couldn't connect to Docker daemon. You might need to start Docker for Mac.</pre></div></div></section></div></div><script src="node_modules/reveal.js/lib/js/head.min.js"></script><script src="node_modules/reveal.js/js/reveal.js"></script><script>// See https://github.com/hakimel/reveal.js#configuration for a full list of configuration options
+Reveal.initialize({
+  // Display controls in the bottom right corner
+  controls: true,
+  // Display a presentation progress bar
+  progress: true,
+  // Set a per-slide timing for speaker notes, null means none
+  defaultTiming: null,
+  // Display the page number of the current slide
+  slideNumber: false,
+  // Push each slide change to the browser history
+  history: false,
+  // Enable keyboard shortcuts for navigation
+  keyboard: true,
+  // Enable the slide overview mode
+  overview: true,
+  // Vertical centering of slides
+  center: true,
+  // Enables touch navigation on devices with touch input
+  touch: true,
+  // Loop the presentation
+  loop: false,
+  // Change the presentation direction to be RTL
+  rtl: false,
+  // Randomizes the order of slides each time the presentation loads
+  shuffle: false,
+  // Turns fragments on and off globally
+  fragments: true,
+  // Flags if the presentation is running in an embedded mode,
+  // i.e. contained within a limited portion of the screen
+  embedded: false,
+  // Flags if we should show a help overlay when the questionmark
+  // key is pressed
+  help: true,
+  // Flags if speaker notes should be visible to all viewers
+  showNotes: false,
+  // Global override for autolaying embedded media (video/audio/iframe)
+  // - null: Media will only autoplay if data-autoplay is present
+  // - true: All media will autoplay, regardless of individual setting
+  // - false: No media will autoplay, regardless of individual setting
+  autoPlayMedia: null,
+  // Number of milliseconds between automatically proceeding to the
+  // next slide, disabled when set to 0, this value can be overwritten
+  // by using a data-autoslide attribute on your slides
+  autoSlide: 0,
+  // Stop auto-sliding after user input
+  autoSlideStoppable: true,
+  // Enable slide navigation via mouse wheel
+  mouseWheel: false,
+  // Hides the address bar on mobile devices
+  hideAddressBar: true,
+  // Opens links in an iframe preview overlay
+  previewLinks: false,
+  // Theme (e.g., beige, black, league, night, serif, simple, sky, solarized, white)
+  // NOTE setting the theme in the config no longer works in reveal.js 3.x
+  //theme: Reveal.getQueryHash().theme || 'black',
+  // Transition style (e.g., none, fade, slide, convex, concave, zoom)
+  transition: Reveal.getQueryHash().transition || 'slide',
+  // Transition speed (e.g., default, fast, slow)
+  transitionSpeed: 'default',
+  // Transition style for full page slide backgrounds (e.g., none, fade, slide, convex, concave, zoom)
+  backgroundTransition: 'fade',
+  // Number of slides away from the current that are visible
+  viewDistance: 3,
+  // Parallax background image (e.g., "'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg'")
+  parallaxBackgroundImage: '',
+  // Parallax background size in CSS syntax (e.g., "2100px 900px")
+  parallaxBackgroundSize: '',
+
+  // The "normal" size of the presentation, aspect ratio will be preserved
+  // when the presentation is scaled to fit different resolutions. Can be
+  // specified using percentage units.
+  width: 960,
+  height: 700,
+
+  // Factor of the display size that should remain empty around the content
+  margin: 0.1,
+
+  // Bounds for smallest/largest possible scale to apply to content
+  minScale: 0.2,
+  maxScale: 1.5,
+
+  // Optional libraries used to extend on reveal.js
+  dependencies: [
+      { src: 'node_modules/reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+      { src: 'node_modules/reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+      { src: 'node_modules/reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+      
+      { src: 'node_modules/reveal.js/plugin/zoom-js/zoom.js', async: true },
+      { src: 'node_modules/reveal.js/plugin/notes/notes.js', async: true }
+  ]
+});</script></body></html>
