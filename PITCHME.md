@@ -8,11 +8,9 @@ Make sure you have [docker-compose](https://docs.docker.com/compose/install/), [
 ### Download the app and run it on local PC
 
 1. Clone this repository
-
     $ git clone https://github.com/dalbhanj/hit-counter
 
 2. Use docker-compose to start the application
-
     $ docker-compose up
 
 The web app should now be listening on port 80 on the host IP address
@@ -20,8 +18,9 @@ The web app should now be listening on port 80 on the host IP address
 Bring the application down using CTRL+C or ```docker-compose down```
 
 Now that our app works, let's run this on ECS
+
 ---
-=== Deploy on Amazon ECS
+### Deploy on Amazon ECS
 
 Actually before we run it as a task, we will make one more change to the application.
 We will remove Redis container from our configuration and use
@@ -113,7 +112,7 @@ by setting desired scaling policies for your service
 
     $ ab -n 100000 -c 1000 <elb-dns-name>
 
-=== Deploy on Fargate
+### Deploy on Fargate
 
 Great to see our app running as highly available service on ECS. Now let's get rid of the infrastructure and
 run this as a Fargate service.
