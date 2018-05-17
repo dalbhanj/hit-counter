@@ -2,7 +2,7 @@ Simple demo to demonstrate migration of locally developed application into Amazo
 
 ---
 ### Pre-requisites
-Make sure you have https://docs.docker.com/compose/install/[docker-compose], https://docs.docker.com/engine/installation/[docker], http://docs.aws.amazon.com/cli/latest/userguide/installing.html[awscli] installed on your machine
+Make sure you have [docker-compose](https://docs.docker.com/compose/install/), [docker](https://docs.docker.com/engine/installation/), [awscli](http://docs.aws.amazon.com/cli/latest/userguide/installing.html) installed on your machine
 
 ---
 ### Download the app and run it on local PC
@@ -25,12 +25,12 @@ Now that our app works, let's run this on ECS
 
 Actually before we run it as a task, we will make one more change to the application.
 We will remove Redis container from our configuration and use
-https://aws.amazon.com/elasticache/redis/[Elasticache Redis cluster] as a centralized
+[Elasticache Redis cluster](https://aws.amazon.com/elasticache/redis/) as a centralized
 data store to keep the count of visitors. By doing this, we can achieve HA and use built-in
  features of managed Redis service while we focus on our app development
 
-1. Let's create a http://docs.aws.amazon.com/AmazonECS/latest/developerguide/create_cluster.html[ECS cluster]
-with EC2 hosts using https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_tutorial_EC2.html[ECS CLI].
+1. Let's create a [ECS cluster](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/create_cluster.html)
+with EC2 hosts using [ECS CLI](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_tutorial_EC2.html).
 
     $ export ECS_PROFILE=hitcounter_ec2
     $ ecs-cli configure --cluster hitcounter-ec2 --region us-east-1 --default-launch-type EC2 --config-name hitcounter-ec2
