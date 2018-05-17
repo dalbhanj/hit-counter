@@ -1,13 +1,10 @@
-== ReadMe
-:toc:
-:icons:
-:linkattrs:
-
 Simple demo to demonstrate migration of locally developed application into Amazon ECS and then to Fargate
 
+---
 === Pre-requisites
 Make sure you have https://docs.docker.com/compose/install/[docker-compose], https://docs.docker.com/engine/installation/[docker], http://docs.aws.amazon.com/cli/latest/userguide/installing.html[awscli] installed on your machine
 
+---
 === Download the app and run it on local PC
 
 1. Clone this repository
@@ -23,7 +20,7 @@ The web app should now be listening on port 80 on the host IP address
 Bring the application down using CTRL+C or ```docker-compose down```
 
 Now that our app works, let's run this on ECS
-
+---
 === Deploy on Amazon ECS
 
 Actually before we run it as a task, we will make one more change to the application.
