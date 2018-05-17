@@ -8,10 +8,10 @@ Make sure you have [docker-compose](https://docs.docker.com/compose/install/), [
 ### Download the app and run it on local PC
 
 1. Clone this repository
-    $ git clone https://github.com/dalbhanj/hit-counter
+`$ git clone https://github.com/dalbhanj/hit-counter`
 
 2. Use docker-compose to start the application
-    $ docker-compose up
+`$ docker-compose up`    
 
 The web app should now be listening on port 80 on the host IP address
 
